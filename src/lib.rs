@@ -1,8 +1,30 @@
-use swc_plugin::{ast::*, plugin_transform};
+use swc_plugin::{ast::*, plugin_transform, syntax_pos::DUMMY_SP};
 
 #[derive(Default)]
 pub struct TransformVisitor {
     in_function: u32,
+}
+
+impl TransformVisitor {
+    fn visit_mut_fn_stmts(&mut self, stmts: &mut Vec<Stmt>) {
+        let mut use_proxy_stmt_idxs = vec![];
+        for (idx, stmt) in stmts.iter_mut().enumerate() {
+            if let Stmt::Expr(expr_stmt) = &stmt {
+                if let Expr::Call(call_expr) = &*expr_stmt.expr {
+                    if let Callee::Expr(callee) = &call_expr.callee {
+                        if let Expr::Ident(callee_ident) = &**callee {
+                            if &*callee_ident.sym == "useProxy" {
+                                use_proxy_stmt_idxs.push(idx);
+                            }
+                        }
+                    }
+                };
+            }
+        }
+        for idx in use_proxy_stmt_idxs {
+            stmts[idx] = Stmt::Empty(EmptyStmt { span: DUMMY_SP });
+        }
+    }
 }
 
 impl VisitMut for TransformVisitor {
@@ -10,29 +32,18 @@ impl VisitMut for TransformVisitor {
 
     fn visit_mut_fn_expr(&mut self, fn_expr: &mut FnExpr) {
         self.in_function = self.in_function + 1;
-        fn_expr.function.body.visit_mut_children_with(self);
+        if let Some(block_stmt) = &mut fn_expr.function.body {
+            self.visit_mut_fn_stmts(&mut block_stmt.stmts);
+        }
         self.in_function = self.in_function - 1;
     }
 
     fn visit_mut_arrow_expr(&mut self, arrow_expr: &mut ArrowExpr) {
         self.in_function = self.in_function + 1;
-        arrow_expr.body.visit_mut_children_with(self);
-        self.in_function = self.in_function - 1;
-    }
-
-    fn visit_mut_expr_stmt(&mut self, expr_stmt: &mut ExprStmt) {
-        // in rendering
-        if self.in_function == 1 {
-            if let Expr::Call(call_expr) = &*expr_stmt.expr {
-                if let Callee::Expr(callee) = &call_expr.callee {
-                    if let Expr::Ident(callee_ident) = &**callee {
-                        if &*callee_ident.sym == "useProxy" {
-                            panic!("hohohoho");
-                        }
-                    }
-                }
-            }
+        if let BlockStmtOrExpr::BlockStmt(block_stmt) = &mut arrow_expr.body {
+            self.visit_mut_fn_stmts(&mut block_stmt.stmts);
         }
+        self.in_function = self.in_function - 1;
     }
 }
 
