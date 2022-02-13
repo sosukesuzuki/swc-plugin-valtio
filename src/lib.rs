@@ -66,7 +66,7 @@ impl TransformVisitor {
                                 callee: Callee::Expr(Box::new(Expr::Ident(Ident {
                                     span: DUMMY_SP,
                                     optional: false,
-                                    sym: "useSnap".into(),
+                                    sym: "useSnapshot".into(),
                                 }))),
                                 type_args: None,
                                 args: args.to_vec(),
@@ -133,10 +133,31 @@ mod transform_visitor_tests {
     }
 
     test!(
-        ::swc_ecma_parser::Syntax::default(),
+        ::swc_ecma_parser::Syntax::Es(::swc_ecma_parser::EsConfig {
+            jsx: true,
+            ..Default::default()
+        }),
         |_| transform_visitor(),
         use_proxy_macros,
-        "const Component = () => {useProxy(state)};",
-        "const Component = () => {const valtio_macro_snap_state = useSnap(state)};"
+        r#"
+        import { useProxy } from 'valtio/macro'
+        const Component = () => {
+          useProxy(state)
+          return <div>
+            {state.count}
+            <button onClick={() => ++state.count}>+1</button>
+          </div>
+        }
+        "#,
+        r#"
+        import { useProxy } from 'valtio/macro'
+        const Component = () => {
+          const valtio_macro_snap_state = useSnapshot(state);
+          return <div>
+            {state.count}
+            <button onClick={() => ++state.count}>+1</button>
+          </div>
+        }
+        "#
     );
 }
