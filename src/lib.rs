@@ -1,4 +1,4 @@
-use swc_plugin::{ast::*, plugin_transform};
+use swc_plugin::{ast::*, plugin_transform, syntax_pos::DUMMY_SP};
 
 #[derive(Default)]
 pub struct TransformVisitor {
@@ -33,7 +33,33 @@ impl TransformVisitor {
                 }
             });
             if let Some((idx, args)) = maybe_use_proxy_info {
-                stmts.remove(idx);
+                stmts[idx] = Stmt::Decl(Decl::Var(VarDecl {
+                    span: DUMMY_SP,
+                    kind: VarDeclKind::Const,
+                    declare: false,
+                    decls: vec![VarDeclarator {
+                        span: DUMMY_SP,
+                        name: Pat::Ident(BindingIdent {
+                            type_ann: None,
+                            id: Ident {
+                                span: DUMMY_SP,
+                                optional: false,
+                                sym: "snap".into(),
+                            },
+                        }),
+                        definite: false,
+                        init: Some(Box::new(Expr::Call(CallExpr {
+                            span: DUMMY_SP,
+                            callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+                                span: DUMMY_SP,
+                                optional: false,
+                                sym: "useSnap".into(),
+                            }))),
+                            type_args: None,
+                            args: args.to_vec(),
+                        }))),
+                    }],
+                }));
             }
         }
     }
@@ -97,6 +123,6 @@ mod transform_visitor_tests {
         |_| transform_visitor(),
         use_proxy_macros,
         "const Component = () => {useProxy(state)};",
-        "const Component = () => {};"
+        "const Component = () => {const snap = useSnap(state)};"
     );
 }
