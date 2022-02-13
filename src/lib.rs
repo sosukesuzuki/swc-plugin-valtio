@@ -9,22 +9,23 @@ impl TransformVisitor {
     fn visit_mut_fn_stmts(&mut self, stmts: &mut Vec<Stmt>) {
         // in render
         if self.in_function == 1 {
-            let mut use_proxy_stmt_idxs = vec![];
+            let mut maybe_proxy_stmt_idx = None;
             for (idx, stmt) in stmts.iter_mut().enumerate() {
                 if let Stmt::Expr(expr_stmt) = &stmt {
                     if let Expr::Call(call_expr) = &*expr_stmt.expr {
                         if let Callee::Expr(callee) = &call_expr.callee {
                             if let Expr::Ident(callee_ident) = &**callee {
                                 if &*callee_ident.sym == "useProxy" {
-                                    use_proxy_stmt_idxs.push(idx);
+                                    maybe_proxy_stmt_idx = Some(idx);
+                                    break;
                                 }
                             }
                         }
                     };
                 }
             }
-            for idx in use_proxy_stmt_idxs {
-                stmts.remove(idx);
+            if let Some(proxy_stmt_idx) = maybe_proxy_stmt_idx {
+                stmts.remove(proxy_stmt_idx);
             }
         }
     }
