@@ -28,3 +28,22 @@ impl VisitMut for TransformVisitor {
 pub fn process_transform(program: Program, _plugin_config: String) -> Program {
     program.fold_with(&mut as_folder(TransformVisitor))
 }
+
+#[cfg(test)]
+mod transform_visitor_tests {
+    use swc_ecma_transforms_testing::test;
+
+    use super::*;
+
+    fn transform_visitor() -> impl 'static + Fold + VisitMut {
+        as_folder(TransformVisitor)
+    }
+
+    test!(
+        ::swc_ecma_parser::Syntax::default(),
+        |_| transform_visitor(),
+        foo,
+        r#"console.log("hello world");"#,
+        r#"console.log("hello world");"#
+    );
+}

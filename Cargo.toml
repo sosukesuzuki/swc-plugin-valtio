@@ -9,3 +9,5 @@ crate-type = ["cdylib"]
 [dependencies]
 serde = "1"
 swc_plugin = "*"
+swc_ecma_parser = "0.88.3"
+swc_ecma_transforms_testing = "0.60.0"
