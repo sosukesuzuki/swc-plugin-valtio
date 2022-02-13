@@ -1,4 +1,4 @@
-use swc_plugin::{ast::*, plugin_transform, syntax_pos::DUMMY_SP};
+use swc_plugin::{ast::*, plugin_transform};
 
 #[derive(Default)]
 pub struct TransformVisitor {
@@ -7,22 +7,25 @@ pub struct TransformVisitor {
 
 impl TransformVisitor {
     fn visit_mut_fn_stmts(&mut self, stmts: &mut Vec<Stmt>) {
-        let mut use_proxy_stmt_idxs = vec![];
-        for (idx, stmt) in stmts.iter_mut().enumerate() {
-            if let Stmt::Expr(expr_stmt) = &stmt {
-                if let Expr::Call(call_expr) = &*expr_stmt.expr {
-                    if let Callee::Expr(callee) = &call_expr.callee {
-                        if let Expr::Ident(callee_ident) = &**callee {
-                            if &*callee_ident.sym == "useProxy" {
-                                use_proxy_stmt_idxs.push(idx);
+        // in render
+        if self.in_function == 1 {
+            let mut use_proxy_stmt_idxs = vec![];
+            for (idx, stmt) in stmts.iter_mut().enumerate() {
+                if let Stmt::Expr(expr_stmt) = &stmt {
+                    if let Expr::Call(call_expr) = &*expr_stmt.expr {
+                        if let Callee::Expr(callee) = &call_expr.callee {
+                            if let Expr::Ident(callee_ident) = &**callee {
+                                if &*callee_ident.sym == "useProxy" {
+                                    use_proxy_stmt_idxs.push(idx);
+                                }
                             }
                         }
-                    }
-                };
+                    };
+                }
             }
-        }
-        for idx in use_proxy_stmt_idxs {
-            stmts[idx] = Stmt::Empty(EmptyStmt { span: DUMMY_SP });
+            for idx in use_proxy_stmt_idxs {
+                stmts.remove(idx);
+            }
         }
     }
 }
