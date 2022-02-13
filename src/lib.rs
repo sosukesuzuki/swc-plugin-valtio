@@ -10,7 +10,7 @@ impl VisitMut for TransformVisitor {
 
     fn visit_mut_fn_expr(&mut self, fn_expr: &mut FnExpr) {
         self.in_function = self.in_function + 1;
-        fn_expr.body.visit_mut_children_with(self);
+        fn_expr.function.body.visit_mut_children_with(self);
         self.in_function = self.in_function - 1;
     }
 
@@ -20,13 +20,15 @@ impl VisitMut for TransformVisitor {
         self.in_function = self.in_function - 1;
     }
 
-    fn visit_mut_call_expr(&mut self, call_expr: &mut CallExpr) {
-        // in render
+    fn visit_mut_expr_stmt(&mut self, expr_stmt: &mut ExprStmt) {
+        // in rendering
         if self.in_function == 1 {
-            if let Callee::Expr(callee) = &call_expr.callee {
-                if let Expr::Ident(callee_ident) = &**callee {
-                    if &*callee_ident.sym == "useProxy" {
-                        panic!("hohohoho");
+            if let Expr::Call(call_expr) = &*expr_stmt.expr {
+                if let Callee::Expr(callee) = &call_expr.callee {
+                    if let Expr::Ident(callee_ident) = &**callee {
+                        if &*callee_ident.sym == "useProxy" {
+                            panic!("hohohoho");
+                        }
                     }
                 }
             }
