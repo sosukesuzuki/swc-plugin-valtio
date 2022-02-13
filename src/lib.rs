@@ -1,9 +1,37 @@
 use swc_plugin::{ast::*, plugin_transform};
 
-pub struct TransformVisitor;
+#[derive(Default)]
+pub struct TransformVisitor {
+    in_function: u32,
+}
 
 impl VisitMut for TransformVisitor {
-    // Implement necessary visit_mut_* methods for actual custom transform.
+    noop_visit_mut_type!();
+
+    fn visit_mut_fn_expr(&mut self, fn_expr: &mut FnExpr) {
+        self.in_function = self.in_function + 1;
+        fn_expr.body.visit_mut_children_with(self);
+        self.in_function = self.in_function - 1;
+    }
+
+    fn visit_mut_arrow_expr(&mut self, arrow_expr: &mut ArrowExpr) {
+        self.in_function = self.in_function + 1;
+        arrow_expr.body.visit_mut_children_with(self);
+        self.in_function = self.in_function - 1;
+    }
+
+    fn visit_mut_call_expr(&mut self, call_expr: &mut CallExpr) {
+        // in render
+        if self.in_function == 1 {
+            if let Callee::Expr(callee) = &call_expr.callee {
+                if let Expr::Ident(callee_ident) = &**callee {
+                    if &*callee_ident.sym == "useProxy" {
+                        panic!("hohohoho");
+                    }
+                }
+            }
+        }
+    }
 }
 
 /// An entrypoint to the SWC's transform plugin.
@@ -26,7 +54,7 @@ impl VisitMut for TransformVisitor {
 /// steps with communicating with host. Refer `swc_plugin_macro` for more details.
 #[plugin_transform]
 pub fn process_transform(program: Program, _plugin_config: String) -> Program {
-    program.fold_with(&mut as_folder(TransformVisitor))
+    program.fold_with(&mut as_folder(TransformVisitor::default()))
 }
 
 #[cfg(test)]
@@ -36,14 +64,14 @@ mod transform_visitor_tests {
     use super::*;
 
     fn transform_visitor() -> impl 'static + Fold + VisitMut {
-        as_folder(TransformVisitor)
+        as_folder(TransformVisitor::default())
     }
 
     test!(
         ::swc_ecma_parser::Syntax::default(),
         |_| transform_visitor(),
-        foo,
-        r#"console.log("hello world");"#,
-        r#"console.log("hello world");"#
+        use_proxy_macros,
+        "const Component = () => {useProxy(state)};",
+        "const Component = () => {};"
     );
 }
