@@ -9,6 +9,7 @@ impl TransformVisitor {
     fn visit_mut_fn_stmts(&mut self, stmts: &mut Vec<Stmt>) {
         // in render
         if self.in_function == 1 {
+            // find `useProxy` call
             let maybe_use_proxy_info = stmts.iter_mut().enumerate().find_map(|(idx, stmt)| {
                 if let Stmt::Expr(expr_stmt) = stmt {
                     if let Expr::Call(call_expr) = &*expr_stmt.expr {
@@ -43,6 +44,7 @@ impl TransformVisitor {
                 } else {
                     None
                 };
+                // replace `useProxy(state)` with `const snap = useSnap(state);`.
                 if let Some(snap_name) = maybe_snap_name {
                     stmts[idx] = Stmt::Decl(Decl::Var(VarDecl {
                         span: DUMMY_SP,
