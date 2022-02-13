@@ -33,33 +33,45 @@ impl TransformVisitor {
                 }
             });
             if let Some((idx, args)) = maybe_use_proxy_info {
-                stmts[idx] = Stmt::Decl(Decl::Var(VarDecl {
-                    span: DUMMY_SP,
-                    kind: VarDeclKind::Const,
-                    declare: false,
-                    decls: vec![VarDeclarator {
+                let first_arg = &args[0];
+                let maybe_snap_name = if let None = first_arg.spread {
+                    if let Expr::Ident(ident) = &*first_arg.expr {
+                        Some(ident.sym.clone())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+                if let Some(snap_name) = maybe_snap_name {
+                    stmts[idx] = Stmt::Decl(Decl::Var(VarDecl {
                         span: DUMMY_SP,
-                        name: Pat::Ident(BindingIdent {
-                            type_ann: None,
-                            id: Ident {
-                                span: DUMMY_SP,
-                                optional: false,
-                                sym: "snap".into(),
-                            },
-                        }),
-                        definite: false,
-                        init: Some(Box::new(Expr::Call(CallExpr {
+                        kind: VarDeclKind::Const,
+                        declare: false,
+                        decls: vec![VarDeclarator {
                             span: DUMMY_SP,
-                            callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+                            name: Pat::Ident(BindingIdent {
+                                type_ann: None,
+                                id: Ident {
+                                    span: DUMMY_SP,
+                                    optional: false,
+                                    sym: format!("valtio_macro_snap_{}", snap_name).into(),
+                                },
+                            }),
+                            definite: false,
+                            init: Some(Box::new(Expr::Call(CallExpr {
                                 span: DUMMY_SP,
-                                optional: false,
-                                sym: "useSnap".into(),
+                                callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+                                    span: DUMMY_SP,
+                                    optional: false,
+                                    sym: "useSnap".into(),
+                                }))),
+                                type_args: None,
+                                args: args.to_vec(),
                             }))),
-                            type_args: None,
-                            args: args.to_vec(),
-                        }))),
-                    }],
-                }));
+                        }],
+                    }));
+                }
             }
         }
     }
@@ -123,6 +135,6 @@ mod transform_visitor_tests {
         |_| transform_visitor(),
         use_proxy_macros,
         "const Component = () => {useProxy(state)};",
-        "const Component = () => {const snap = useSnap(state)};"
+        "const Component = () => {const valtio_macro_snap_state = useSnap(state)};"
     );
 }
