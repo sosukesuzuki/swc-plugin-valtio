@@ -143,6 +143,7 @@ impl VisitMut for TransformVisitor {
 
     fn visit_mut_module(&mut self, module: &mut Module) {
         self.visit_mut_module_items_to_transform_import(&mut module.body);
+        module.visit_mut_children_with(self);
     }
 }
 
