@@ -77,6 +77,38 @@ impl TransformVisitor {
             }
         }
     }
+
+    fn visit_mut_module_items_to_transform_import(&mut self, module_body: &mut Vec<ModuleItem>) {
+        // find index of `import { useProxy } from "valtio/macro"`
+        let maybe_use_proxy_import_idx =
+            module_body
+                .iter_mut()
+                .enumerate()
+                .find_map(|(idx, module_item)| match module_item {
+                    ModuleItem::ModuleDecl(ModuleDecl::Import(import_decl)) => {
+                        if &*import_decl.src.value == "valtio/macro"
+                            && import_decl
+                                .specifiers
+                                .iter()
+                                .any(|specifier| match specifier {
+                                    ImportSpecifier::Named(named_specifier) => {
+                                        &*named_specifier.local.sym == "useProxy"
+                                    }
+                                    _ => false,
+                                })
+                        {
+                            Some(idx)
+                        } else {
+                            None
+                        }
+                    }
+                    _ => None,
+                });
+        // remove `import { useProxy } from "valtio/macro"`
+        if let Some(use_proxy_import_idx) = maybe_use_proxy_import_idx {
+            module_body.remove(use_proxy_import_idx);
+        }
+    }
 }
 
 impl VisitMut for TransformVisitor {
@@ -96,6 +128,21 @@ impl VisitMut for TransformVisitor {
             self.visit_mut_fn_stmts(&mut block_stmt.stmts);
         }
         self.in_function = self.in_function - 1;
+    }
+
+    // fn visit_mut_import_decl(&mut self, import_decl: &mut ImportDecl) {
+    //     if &*import_decl.src.value == "valtio/macro"
+    //         && import_decl.specifiers.iter().any(
+    //             |specifier| match specifier {
+    //                 ImportSpecifier::Named(named_specifier) => &*named_specifier.local.sym == "useProxy",
+    //                 _ => false
+    //             }
+    //         )
+    //     {}
+    // }
+
+    fn visit_mut_module(&mut self, module: &mut Module) {
+        self.visit_mut_module_items_to_transform_import(&mut module.body);
     }
 }
 
@@ -150,7 +197,6 @@ mod transform_visitor_tests {
         }
         "#,
         r#"
-        import { useProxy } from 'valtio/macro'
         const Component = () => {
           const valtio_macro_snap_state = useSnapshot(state);
           return <div>
