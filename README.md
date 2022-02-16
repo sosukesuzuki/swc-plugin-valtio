@@ -4,7 +4,7 @@
 
 ## Todo
 
-- [ ] Renaming
+- [x] Renaming
 - [x] Removing an import to `valtio/macros` for `useProxy`
 - [x] Inserting an import to `valtio` for `useSnapshot`
 

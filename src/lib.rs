@@ -1,8 +1,11 @@
+use swc_common::BytePos;
 use swc_plugin::{ast::*, plugin_transform, syntax_pos::DUMMY_SP};
 
 #[derive(Default)]
 pub struct TransformVisitor {
     in_function: u32,
+    proxy_name_and_span: Option<(JsWord, (BytePos, BytePos))>,
+    snap_name: Option<JsWord>,
 }
 
 impl TransformVisitor {
@@ -35,9 +38,9 @@ impl TransformVisitor {
             });
             if let Some((idx, args)) = maybe_use_proxy_info {
                 let first_arg = &args[0];
-                let maybe_snap_name = if let None = first_arg.spread {
+                let maybe_proxy_name_and_span = if let None = first_arg.spread {
                     if let Expr::Ident(ident) = &*first_arg.expr {
-                        Some(ident.sym.clone())
+                        Some((ident.sym.clone(), (ident.span.lo, ident.span.hi)))
                     } else {
                         None
                     }
@@ -45,7 +48,10 @@ impl TransformVisitor {
                     None
                 };
                 // replace `useProxy(state)` with `const snap = useSnap(state);`.
-                if let Some(snap_name) = maybe_snap_name {
+                if let Some((proxy_name, proxy_span)) = maybe_proxy_name_and_span {
+                    self.proxy_name_and_span = Some((proxy_name.clone(), proxy_span));
+                    let snap_name: JsWord = format!("valtio_macro_snap_{}", proxy_name).into();
+                    self.snap_name = Some(snap_name.clone());
                     stmts[idx] = Stmt::Decl(Decl::Var(VarDecl {
                         span: DUMMY_SP,
                         kind: VarDeclKind::Const,
@@ -57,7 +63,7 @@ impl TransformVisitor {
                                 id: Ident {
                                     span: DUMMY_SP,
                                     optional: false,
-                                    sym: format!("valtio_macro_snap_{}", snap_name).into(),
+                                    sym: snap_name,
                                 },
                             }),
                             definite: false,
@@ -117,23 +123,39 @@ impl TransformVisitor {
                     src: Str {
                         span: DUMMY_SP,
                         has_escape: false,
-                        kind: StrKind::Normal { contains_quote: false },
-                        value: "valtio".into()
+                        kind: StrKind::Normal {
+                            contains_quote: false,
+                        },
+                        value: "valtio".into(),
                     },
-                    specifiers: vec![
-                        ImportSpecifier::Named(ImportNamedSpecifier {
+                    specifiers: vec![ImportSpecifier::Named(ImportNamedSpecifier {
+                        span: DUMMY_SP,
+                        is_type_only: false,
+                        local: Ident {
                             span: DUMMY_SP,
-                            is_type_only: false,
-                            local: Ident {
-                                span: DUMMY_SP,
-                                sym: "useSnapshot".into(),
-                                optional: false
-                            },
-                            imported: None,
-                        })
-                    ]
-                }))
+                            sym: "useSnapshot".into(),
+                            optional: false,
+                        },
+                        imported: None,
+                    })],
+                })),
             );
+        }
+    }
+
+    fn visit_mut_ident_to_rename(&mut self, ident: &mut Ident) {
+        // in render
+        if self.in_function == 1 {
+            if let Some((proxy_name, (proxy_span_lo, proxy_span_hi))) = &self.proxy_name_and_span {
+                if let Some(snap_name) = &self.snap_name {
+                    if &*ident.sym == &*proxy_name
+                        && ident.span.lo != proxy_span_lo.clone()
+                        && ident.span.hi != proxy_span_hi.clone()
+                    {
+                        ident.sym = snap_name.clone();
+                    }
+                }
+            }
         }
     }
 }
@@ -142,19 +164,26 @@ impl VisitMut for TransformVisitor {
     noop_visit_mut_type!();
 
     fn visit_mut_fn_expr(&mut self, fn_expr: &mut FnExpr) {
-        self.in_function = self.in_function + 1;
+        self.in_function += 1;
         if let Some(block_stmt) = &mut fn_expr.function.body {
             self.visit_mut_fn_stmts(&mut block_stmt.stmts);
         }
-        self.in_function = self.in_function - 1;
+        fn_expr.visit_mut_children_with(self);
+        self.in_function -= 1;
     }
 
     fn visit_mut_arrow_expr(&mut self, arrow_expr: &mut ArrowExpr) {
-        self.in_function = self.in_function + 1;
+        self.in_function += 1;
         if let BlockStmtOrExpr::BlockStmt(block_stmt) = &mut arrow_expr.body {
             self.visit_mut_fn_stmts(&mut block_stmt.stmts);
         }
-        self.in_function = self.in_function - 1;
+        arrow_expr.visit_mut_children_with(self);
+        self.in_function -= 1;
+    }
+
+    fn visit_mut_ident(&mut self, ident: &mut Ident) {
+        self.visit_mut_ident_to_rename(ident);
+        ident.visit_mut_children_with(self);
     }
 
     fn visit_mut_module(&mut self, module: &mut Module) {
@@ -218,7 +247,7 @@ mod transform_visitor_tests {
         const Component = () => {
           const valtio_macro_snap_state = useSnapshot(state);
           return <div>
-            {state.count}
+            {valtio_macro_snap_state.count}
             <button onClick={() => ++state.count}>+1</button>
           </div>
         }
