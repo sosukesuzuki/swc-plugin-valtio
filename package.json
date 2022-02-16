@@ -1,0 +1,22 @@
+{
+  "name": "swc-plugin-valtio",
+  "version": "0.1.0",
+  "description": "Valtio `useProxy` transformer for SWC.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sosukesuzuki/swc-plugin-valtio.git"
+  },
+  "author": {
+    "name": "Sosuke Suzuki",
+    "email": "aosukeke@gmail.com",
+    "url": "https://sosukesuzuki.dev/"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/sosukesuzuki/swc-plugin-valtio/issues"
+  },
+  "homepage": "https://github.com/sosukesuzuki/swc-plugin-valtio#readme",
+  "files": [
+    "target/wasm32-wasi/release/swc_plugin_valtio.wasm"
+  ]
+}
