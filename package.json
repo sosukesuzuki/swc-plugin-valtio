@@ -16,6 +16,7 @@
     "url": "https://github.com/sosukesuzuki/swc-plugin-valtio/issues"
   },
   "homepage": "https://github.com/sosukesuzuki/swc-plugin-valtio#readme",
+  "main": "target/wasm32-wasi/release/swc_plugin_valtio.wasm",
   "files": [
     "target/wasm32-wasi/release/swc_plugin_valtio.wasm"
   ]
