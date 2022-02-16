@@ -6,7 +6,7 @@
 
 - [ ] Renaming
 - [x] Removing an import to `valtio/macros` for `useProxy`
-- [ ] Inserting an import to `valtio` for `useSnapshot`
+- [x] Inserting an import to `valtio` for `useSnapshot`
 
 ## Tests
 
