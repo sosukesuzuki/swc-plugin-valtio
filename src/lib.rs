@@ -104,9 +104,36 @@ impl TransformVisitor {
                     }
                     _ => None,
                 });
-        // remove `import { useProxy } from "valtio/macro"`
         if let Some(use_proxy_import_idx) = maybe_use_proxy_import_idx {
+            // remove `import { useProxy } from "valtio/macro"`
             module_body.remove(use_proxy_import_idx);
+            // insert `import { useSnapshot } from "valtio"`
+            module_body.insert(
+                0,
+                ModuleItem::ModuleDecl(ModuleDecl::Import(ImportDecl {
+                    span: DUMMY_SP,
+                    type_only: false,
+                    asserts: None,
+                    src: Str {
+                        span: DUMMY_SP,
+                        has_escape: false,
+                        kind: StrKind::Normal { contains_quote: false },
+                        value: "valtio".into()
+                    },
+                    specifiers: vec![
+                        ImportSpecifier::Named(ImportNamedSpecifier {
+                            span: DUMMY_SP,
+                            is_type_only: false,
+                            local: Ident {
+                                span: DUMMY_SP,
+                                sym: "useSnapshot".into(),
+                                optional: false
+                            },
+                            imported: None,
+                        })
+                    ]
+                }))
+            );
         }
     }
 }
@@ -198,6 +225,7 @@ mod transform_visitor_tests {
         }
         "#,
         r#"
+        import { useSnapshot } from 'valtio';
         const Component = () => {
           const valtio_macro_snap_state = useSnapshot(state);
           return <div>
