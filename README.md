@@ -2,11 +2,40 @@
 
 [Valtio `useProxy` transformer](https://github.com/pmndrs/valtio#useproxy-macro) for SWC.
 
-## Todo
+## Example
 
-- [x] Renaming
-- [x] Removing an import to `valtio/macros` for `useProxy`
-- [x] Inserting an import to `valtio` for `useSnapshot`
+```jsx
+import { useProxy } from 'valtio/macro'
+
+const Component = () => {
+  useProxy(state);
+  return (
+    <div>
+      {state.count}
+      <button onClick={() => ++state.count}>
+        +1
+      </button>
+    </div>
+  );
+}
+
+// The code above becomes the code below.
+
+import { useSnapshot } from 'valtio';
+
+const Component = () => {
+  const valtio_macro_snap_state = useSnapshot(state);
+  return (
+    <div>
+      {valtio_macro_snap_state.count}
+      <button onClick={() => ++state.count}>
+        +1
+      </button>
+    </div>
+  );
+}
+
+```
 
 ## Tests
 
