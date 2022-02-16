@@ -157,17 +157,6 @@ impl VisitMut for TransformVisitor {
         self.in_function = self.in_function - 1;
     }
 
-    // fn visit_mut_import_decl(&mut self, import_decl: &mut ImportDecl) {
-    //     if &*import_decl.src.value == "valtio/macro"
-    //         && import_decl.specifiers.iter().any(
-    //             |specifier| match specifier {
-    //                 ImportSpecifier::Named(named_specifier) => &*named_specifier.local.sym == "useProxy",
-    //                 _ => false
-    //             }
-    //         )
-    //     {}
-    // }
-
     fn visit_mut_module(&mut self, module: &mut Module) {
         self.visit_mut_module_items_to_transform_import(&mut module.body);
         module.visit_mut_children_with(self);
