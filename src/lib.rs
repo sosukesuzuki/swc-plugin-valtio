@@ -218,7 +218,7 @@ impl VisitMut for TransformVisitor {
 /// However, this means plugin author need to handle all of serialization/deserialization
 /// steps with communicating with host. Refer `swc_plugin_macro` for more details.
 #[plugin_transform]
-pub fn process_transform(program: Program, _plugin_config: String) -> Program {
+pub fn process_transform(program: Program, _plugin_config: String, _context: String) -> Program {
     program.fold_with(&mut as_folder(TransformVisitor::new()))
 }
 

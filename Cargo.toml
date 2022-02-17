@@ -8,8 +8,8 @@ crate-type = ["cdylib"]
 
 [dependencies]
 serde = "1"
-swc_plugin = "*"
-swc_common = "*"
+swc_plugin = "0.27.1"
+swc_common = "0.17.7"
 
 [dev-dependencies]
 swc_ecma_parser = "0.88.3"
