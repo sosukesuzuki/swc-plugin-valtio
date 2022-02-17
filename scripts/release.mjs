@@ -14,7 +14,9 @@ await $`git push origin HEAD`;
 
 await $`git push origin --tags`;
 
-const { version } = require("./package.json");
+const { version } = JSON.parse(
+  await fs.readFile(path.join(__dirname, "..", "package.json"))
+);
 
 console.log("Done!");
 
