@@ -1,6 +1,6 @@
 #!/usr/bin/env zx
 
-const { release } = minimist(process.argv.slice(2));
+const { release } = argv;
 
 if (release !== "major" && release !== "minor" && release !== "patch") {
   throw new Error(
