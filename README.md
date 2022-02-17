@@ -2,6 +2,24 @@
 
 [Valtio `useProxy` transformer](https://github.com/pmndrs/valtio#useproxy-macro) for SWC.
 
+## Installation
+
+```
+npm install --save-dev swc-plugin-valtio
+```
+
+## Usage
+
+```json
+{
+  "jsc": {
+    "experimental": {
+      "plugins": [["swc-plugin-valtio", {}]]
+    }
+  }
+}
+```
+
 ## Example
 
 ```jsx
