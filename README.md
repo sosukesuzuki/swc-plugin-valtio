@@ -50,3 +50,17 @@ For Linux
 ```
 cargo test_linux
 ```
+
+## Release
+
+```zsh
+npm run release -- --patch
+```
+
+```zsh
+npm run release -- --minor
+```
+
+```zsh
+npm run release -- --major
+```

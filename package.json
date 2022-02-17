@@ -6,6 +6,9 @@
     "type": "git",
     "url": "git+https://github.com/sosukesuzuki/swc-plugin-valtio.git"
   },
+  "scripts": {
+    "release": "zx ./scripts/release.mjs"
+  },
   "author": {
     "name": "Sosuke Suzuki",
     "email": "aosukeke@gmail.com",
