@@ -17,7 +17,10 @@ jobs:
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
-          target: wasm32-wasi
+          toolchain: nightly
+
+      - name: Setup wasm
+        run: rustup target add wasm32-wasi
 
       - name: Run build
         run: cargo build
