@@ -1,10 +1,10 @@
-use swc_common::BytePos;
+use swc_common::{BytePos, Span};
 use swc_plugin::{ast::*, plugin_transform, syntax_pos::DUMMY_SP};
 
 pub struct TransformVisitor {
     in_function: u32,
     proxy_name_and_span: Option<(JsWord, (BytePos, BytePos))>,
-    snap_name: Option<JsWord>,
+    snap_id: Option<Id>,
 }
 
 impl TransformVisitor {
@@ -12,7 +12,7 @@ impl TransformVisitor {
         Self {
             in_function: 0,
             proxy_name_and_span: None,
-            snap_name: None,
+            snap_id: None,
         }
     }
 
@@ -58,7 +58,12 @@ impl TransformVisitor {
                 if let Some((proxy_name, proxy_span)) = maybe_proxy_name_and_span {
                     self.proxy_name_and_span = Some((proxy_name.clone(), proxy_span));
                     let snap_name: JsWord = format!("valtio_macro_snap_{}", proxy_name).into();
-                    self.snap_name = Some(snap_name.clone());
+                    let snap_ident = Ident {
+                        span: DUMMY_SP,
+                        optional: false,
+                        sym: snap_name,
+                    };
+                    self.snap_id = Some((snap_ident.sym.clone(), snap_ident.span.ctxt()));
                     stmts[idx] = Stmt::Decl(Decl::Var(VarDecl {
                         span: DUMMY_SP,
                         kind: VarDeclKind::Const,
@@ -67,11 +72,7 @@ impl TransformVisitor {
                             span: DUMMY_SP,
                             name: Pat::Ident(BindingIdent {
                                 type_ann: None,
-                                id: Ident {
-                                    span: DUMMY_SP,
-                                    optional: false,
-                                    sym: snap_name,
-                                },
+                                id: snap_ident,
                             }),
                             definite: false,
                             init: Some(Box::new(Expr::Call(CallExpr {
@@ -154,12 +155,17 @@ impl TransformVisitor {
         // in render
         if self.in_function == 1 {
             if let Some((proxy_name, (proxy_span_lo, proxy_span_hi))) = &self.proxy_name_and_span {
-                if let Some(snap_name) = &self.snap_name {
+                if let Some((snap_name, snap_ctxt)) = &self.snap_id {
                     if &*ident.sym == &*proxy_name
                         && ident.span.lo != proxy_span_lo.clone()
                         && ident.span.hi != proxy_span_hi.clone()
                     {
                         ident.sym = snap_name.clone();
+                        ident.span = Span {
+                            ctxt: *snap_ctxt,
+                            lo: BytePos(0),
+                            hi: BytePos(0),
+                        };
                     }
                 }
             }
