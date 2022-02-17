@@ -1,7 +1,6 @@
 use swc_common::BytePos;
 use swc_plugin::{ast::*, plugin_transform, syntax_pos::DUMMY_SP};
 
-#[derive(Default)]
 pub struct TransformVisitor {
     in_function: u32,
     proxy_name_and_span: Option<(JsWord, (BytePos, BytePos))>,
@@ -9,6 +8,14 @@ pub struct TransformVisitor {
 }
 
 impl TransformVisitor {
+    fn new() -> Self {
+        Self {
+            in_function: 0,
+            proxy_name_and_span: None,
+            snap_name: None,
+        }
+    }
+
     fn visit_mut_fn_stmts(&mut self, stmts: &mut Vec<Stmt>) {
         // in render
         if self.in_function == 1 {
@@ -212,7 +219,7 @@ impl VisitMut for TransformVisitor {
 /// steps with communicating with host. Refer `swc_plugin_macro` for more details.
 #[plugin_transform]
 pub fn process_transform(program: Program, _plugin_config: String) -> Program {
-    program.fold_with(&mut as_folder(TransformVisitor::default()))
+    program.fold_with(&mut as_folder(TransformVisitor::new()))
 }
 
 #[cfg(test)]
@@ -222,7 +229,7 @@ mod transform_visitor_tests {
     use super::*;
 
     fn transform_visitor() -> impl 'static + Fold + VisitMut {
-        as_folder(TransformVisitor::default())
+        as_folder(TransformVisitor::new())
     }
 
     test!(
