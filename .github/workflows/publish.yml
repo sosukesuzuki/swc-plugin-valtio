@@ -14,7 +14,6 @@ jobs:
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
           target: wasm32-wasi
 
       - name: Run build
